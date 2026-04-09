@@ -1,0 +1,1 @@
+# Bombus-sensu-stricto-wing
