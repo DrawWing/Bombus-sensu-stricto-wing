@@ -1,0 +1,533 @@
+---
+title: "Analysis of wings shape in three cryptic species of *Bombus*"
+subtitle: "Supplementary document with statistical analysis"
+author: 
+  - name: "Bartłomiej Molasy"
+    affiliation: Jagiellonian University, Poland
+    # orcid: 
+  - name: "Adam Tofilski"
+    affiliation: University of Agriculture in Krakow, Poland
+    orcid: 0000-0002-3898-7029
+date-modified: last-modified
+date-format: iso
+format: 
+  html:
+    self-contained: true
+    toc: true
+---
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  tidy = TRUE, tidy.opts = list(arrow=TRUE, indent=2)
+)
+options(digits=3) 
+
+# setwd("D:/wings/_bees/Bombus/2025-Bombus-BM/data")
+```
+
+## Libraries
+
+```{r libraries}
+# calculations
+library(geomorph) # GPA 
+library(Morpho) # CVA
+library(stats) # MANOVA
+library(phangorn) # UPGMA
+library(IdentiFlyR)  # classification
+library(reshape2)  # melt
+
+# plotting and visualization
+library(ggplot2)# plots
+ggplot2::theme_set(theme_light())
+library(ggtree) # tree plots
+library(stringr) #str_split_fixed
+library(ggpubr) # ggarange
+
+```
+
+## Variable names
+
+```{r var-names}
+p = 19 # number of landmarks
+k = 2  # number of dimensions, in this case 2 for coordinates (x, y)
+
+# create coordinates names used by IdentiFly
+xyNames = c("x1", "y1")
+for (i in 2:p) {
+  xyNames = c(xyNames, paste0("x", i))
+  xyNames = c(xyNames, paste0("y", i))
+}
+xyNames
+
+# The number of principal components used is 2*p-4 = 34, which is equal to the degrees of freedom
+# create principal components names used by prcomp
+pcNames <- paste0("PC", 1:(2*p-4))
+pcNames
+
+# define which landmarks are connected by lines in wireframe graph
+linkX <- c(1, 1, 2, 2, 3,  3, 4,  4,  5, 6, 7,  7,  7, 8,  9,  9, 10, 11, 11, 12, 13, 14, 15, 16, 17)
+linkY <- c(2, 3, 4, 5, 6, 19, 6, 10, 12, 8, 8, 14, 19, 9, 10, 15, 11, 12, 17, 13, 18, 15, 16, 17, 18)
+linkBombus <- cbind(linkX, linkY)
+
+# colors = rainbow(4)
+# colors
+colorF = "gray" 
+colorM = "black" 
+colorCry = "blue" 
+colorLuc = "red" 
+colorTer = "green" 
+dotSize = 0.5
+
+```
+
+## Read  data
+
+```{r read-data}
+wings <- read.csv("Bombus-sensu-stricto-wing.csv", sep=";", row.names = 1)
+names <- str_split_fixed(rownames(wings), "-", 4)
+colnames(names) <- c("species", "sex", "ind", "side")
+names = as.data.frame(names)
+names$side = substring(names$side, first=1, last=1)
+names$ind = paste(names$species, names$sex, names$ind, sep = "-")
+names$specSex = paste(names$species, names$sex, sep = "-")
+wings = cbind(names, wings)
+
+```
+
+## GPA alignment
+
+```{r GPA}
+
+# Convert from 2D array to 3D array
+wingsCoords <- arrayspecs(wings[xyNames], p, k)
+dimnames(wingsCoords)[[3]] <- wings$file
+
+# Align the coordinates using Generalized Procrustes Analysis 
+GPA <- gpagen(wingsCoords, print.progress = FALSE)
+aligned3d = GPA$coords
+
+# plot landmarks after alignment
+plotAllSpecimens(GPA$coords,links=linkBombus,label=TRUE,
+                 plot_param = list(pt.bg = "black",
+  pt.cex = 0.5, mean.bg = "red", mean.cex = 1, link.col = "red", txt.pos = 3, txt.cex = 1))
+
+# Convert from 3D array to 2D array
+wingsAligned <- two.d.array(GPA$coords) 
+# rename column names from 1.X, 1.Y to x1, y1 ...
+colnames(wingsAligned) <- gsub("([0-9]+)\\.([XY])", "\\L\\2\\1",
+                                    colnames(wingsAligned), perl = TRUE) 
+wingsAligned = cbind(wingsAligned, CS=GPA$Csize)
+
+# Average coordinates within samples
+ind <- aggregate(wingsAligned, by = list(wings$ind), FUN = mean)
+ind <- data.frame(ind, row.names = 1) # move column 1 to row names
+names <- str_split_fixed(rownames(ind), "-", 3)
+colnames(names) <- c("species", "sex", "ind")
+ind = cbind(names, ind)
+
+ggplot(ind, aes(x = CS, fill = species, colour = species)) + 
+  geom_histogram(alpha = 0.5, position = "identity") +
+    scale_color_manual(name ="", values = c(colorCry, colorLuc, colorTer)) +
+    scale_fill_manual(name ="", values = c(colorCry, colorLuc, colorTer)) 
+
+```
+
+## Sample size
+
+```{r n}
+
+# number of wings
+nrow(wings)
+# number of male and female wings per species
+table(wings$species, wings$sex)
+
+# number of specimens
+nrow(ind)
+# number of males and females per species
+table(ind$species, ind$sex)
+
+```
+
+## PCA
+
+```{r PCA}
+PCA <- prcomp(ind[, xyNames])
+PCscores <- as.data.frame(PCA$x[,pcNames])
+PCscores$species = ind$species
+PCscores$sex = ind$sex
+PCscores$specSex = paste(ind$species, ind$sex, sep = "-")
+PCscores$species = PCscores$species
+
+# create plot labels
+variance.tab <- summary(PCA)$importance
+variance <- variance.tab["Proportion of Variance", "PC1"]
+variance <- round(100 * variance, 1)
+labelX <- paste0("PC1 (", variance, "%)")
+variance <- variance.tab["Proportion of Variance", "PC2"]
+variance <- round(100 * variance, 1)
+labelY <- paste0("PC2 (", variance, "%)")
+
+figPca = ggplot(PCscores, aes(x = PC1, y = PC2,
+                     shape = sex,
+                     color = species)) +
+  geom_point() +
+  scale_shape_manual(
+    name = "sex", 
+    values = c(1, 3),
+    labels = c(F = "female", M = "male")
+  ) +
+  scale_color_manual(
+    name = "species", 
+    values = c(colorCry, colorLuc, colorTer),
+    labels = c(
+      cryptarum = "B. cryptarum", 
+      lucorum   = "B. lucorum", 
+      terrestris = "B. terrestris"
+    )
+  ) +
+  stat_ellipse(aes(linetype = sex), linewidth = 0.8, level = 0.95) +
+  scale_linetype_manual(
+    name = "sex",
+    values = c(F = "dotted", M = "solid"),
+    labels = c(F = "female", M = "male")
+  ) +
+  xlab(labelX) +
+  ylab(labelY) +
+  theme(aspect.ratio = 0.7)
+# theme(
+#   aspect.ratio = 0.7,
+#   legend.position = "bottom",
+#   legend.box = "vertical",
+#   legend.spacing.y = unit(0, "cm")
+# ) +
+# guides(
+#   color = guide_legend(order = 1),
+#   shape = guide_legend(order = 2),
+#   linetype = "none"
+# )
+figPca
+
+```
+
+## MANOVA
+
+```{r manova}
+
+# species
+MANOVA = manova(as.matrix(cbind(PCscores[, pcNames])) ~ species * sex, PCscores)
+summary(MANOVA)
+
+```
+
+## LDA species
+
+```{r lda}
+# use equal prior probability for all groups
+n <- length(unique(PCscores$species)) # number of groups
+LdaSpec <- CVA(PCscores[pcNames], PCscores$species,
+                  rounds = 10000, cv = TRUE,
+                  prior = rep(1/n, n))
+
+LDscores <- as.data.frame(LdaSpec$CVscores)
+colnames(LDscores) <- gsub("CV ", "LD", colnames(LDscores))
+LDscores$species = PCscores$species
+
+figLda = ggplot(LDscores, aes(x = LD1, y = LD2, color = species)) +
+  geom_point(shape = 16) +
+  scale_color_manual(
+    name = "species", 
+    values = c(colorCry, colorLuc, colorTer),
+    labels = c(cryptarum = "B. cryptarum", 
+               lucorum = "B. lucorum", 
+               terrestris = "B. terrestris")) +
+  stat_ellipse()  +
+  theme(aspect.ratio = 0.7)
+figLda
+
+# Confusion matrix
+# Classification of the samples to groups
+LdaClass <- typprobClass(LdaSpec$CVscores, groups = as.factor(LDscores$species), outlier = 0)
+print(LdaClass)
+
+# Mahalanobis distances between groups
+knitr::kable(as.data.frame(as.matrix(LdaSpec$Dist$GroupdistMaha)), digits = 3)
+# pairwise probabilities of differences between groups
+knitr::kable(as.data.frame(as.matrix(LdaSpec$Dist$probsMaha)), digits = 5)
+
+PCscores$classifiedAs = LdaClass$groupaffinCV
+PCscores$error = ifelse(as.character(PCscores$species) == as.character(PCscores$classifiedAs), "OK", "error")
+PCscores[PCscores$error == "error", c("species", "classifiedAs")]
+
+# Calculate mean shapes
+meanLuc <- mshape(aligned3d[,,wings$species == "lucorum"])
+meanCry <- mshape(aligned3d[,,wings$species == "cryptarum"])
+meanTer <- mshape(aligned3d[,,wings$species == "terrestris"])
+
+# Plot wireframe difference
+op <- par(no.readonly = TRUE) # Save current graphical parameters
+par(mfrow = c(3, 1), mar = c(0, 0, 0, 0)) # 1 row, 3 columns
+
+plotRefToTarget(meanCry, meanLuc, mag = 2,
+                links = linkBombus, method = "points", gridPars = list(pt.bg = colorLuc, link.col = colorLuc, pt.size = dotSize, tar.pt.bg = colorCry, tar.link.col = colorCry, tar.pt.size = dotSize))
+legend("bottomleft",
+       legend = c("B. cryptarum", "B. lucorum"),
+       pch = 21,
+       pt.bg = c(colorLuc, colorCry),
+       pt.cex = dotSize,
+       bty = "n")
+mtext("a", side = 3, line = -1, adj = 0)
+
+plotRefToTarget(meanCry, meanTer, mag = 2,
+                links = linkBombus, method = "points", gridPars = list(pt.bg = colorCry, link.col = colorCry, pt.size = dotSize, tar.pt.bg = colorTer, tar.link.col = colorTer, tar.pt.size = dotSize))
+legend("bottomleft",
+       legend = c("B. cryptarum", "B. terrestris"),
+       pch = 21,
+       pt.bg = c(colorCry, colorTer),
+       pt.cex = dotSize,
+       bty = "n")
+mtext("b", side = 3, line = -1, adj = 0)
+
+plotRefToTarget(meanLuc, meanTer, mag = 2,
+                links = linkBombus, method = "points", gridPars = list(pt.bg = colorLuc, link.col = colorLuc, pt.size = dotSize, tar.pt.bg = colorTer, tar.link.col = colorTer, tar.pt.size = 0.5))
+legend("bottomleft",
+       legend = c("B. lucorum", "B. terrestris"),
+       pch = 21,
+       pt.bg = c(colorLuc, colorTer),
+       pt.cex = dotSize,
+       bty = "n")
+mtext("c", side = 3, line = -1, adj = 0)
+
+par(op) # Restore original graphical parameters
+
+```
+
+## LDA sex and species in lucorum and terrestris
+
+```{r lda-specMF}
+
+PCscores = PCscores
+# use equal prior probability for all groups
+n <- length(unique(PCscores$specSex)) # number of groups
+LdaSpecSex <- CVA(PCscores[pcNames], PCscores$specSex,
+                  rounds = 10000, cv = TRUE,
+                  prior = rep(1/n, n))
+
+LDscores <- as.data.frame(LdaSpecSex$CVscores)
+colnames(LDscores) <- gsub("CV ", "LD", colnames(LDscores))
+LDscores$specSex = PCscores$specSex
+LDscores$sex = PCscores$sex
+LDscores$species = PCscores$species
+
+figLdaFM = ggplot(LDscores, aes(x = LD1, y = LD2, shape = sex, color = species)) +
+  geom_point() +
+  scale_shape_manual(
+    name = "sex", 
+    values = c(1, 3),
+    labels = c(F = "female", M = "male")
+  ) +
+  scale_color_manual(
+    name = "species", 
+    values = c(colorCry, colorLuc, colorTer),
+    labels = c(
+      cryptarum = "B. cryptarum", 
+      lucorum   = "B. lucorum", 
+      terrestris = "B. terrestris"
+    )
+  ) +
+  stat_ellipse(aes(linetype = sex), linewidth = 0.8, level = 0.95) +
+  scale_linetype_manual(
+    name = "sex",
+    values = c(F = "dotted", M = "solid"),
+    labels = c(F = "female", M = "male")
+  )  +
+  theme(aspect.ratio = 0.7)
+# theme(
+#   aspect.ratio = 0.7,
+#   legend.position = "bottom",
+#   legend.box = "vertical",   
+#   legend.spacing.y = unit(0, "cm")
+# ) +
+# guides(
+#   color = guide_legend(order = 1),
+#   shape = guide_legend(order = 2),
+#   linetype = "none"
+# )
+figLdaFM
+
+ggplot(LDscores, aes(x = LD1, y = LD3, shape = sex, color = species)) +
+  geom_point() +
+  scale_shape_manual(
+    name = "sex", 
+    values = c(1, 3),
+    labels = c(F = "female", M = "male")
+  ) +
+  scale_color_manual(
+    name = "species", 
+    values = c(colorCry, colorLuc, colorTer),
+    labels = c(
+      cryptarum = "B. cryptarum", 
+      lucorum   = "B. lucorum", 
+      terrestris = "B. terrestris"
+    )
+  ) +
+  stat_ellipse(aes(linetype = sex), linewidth = 0.8, level = 0.95) +
+  scale_linetype_manual(
+    name = "sex",
+    values = c(F = "dotted", M = "solid"),
+    labels = c(F = "female", M = "male")
+  ) 
+
+# Confusion matrix
+# Classification of the samples to groups
+LdaClass <- typprobClass(LdaSpecSex$CVscores, groups = as.factor(LDscores$specSex), outlier = 0)
+print(LdaClass)
+
+# Mahalanobis distances between groups
+knitr::kable(as.data.frame(as.matrix(LdaSpecSex$Dist$GroupdistMaha)), digits = 3)
+# pairwise probabilities of differences between groups
+knitr::kable(as.data.frame(as.matrix(LdaSpecSex$Dist$probsMaha)), digits = 5)
+
+PCscores$classifiedAs = LdaClass$groupaffinCV
+PCscores$error = ifelse(as.character(PCscores$specSex) == as.character(PCscores$classifiedAs), "OK", "error")
+PCscores[PCscores$error == "error", c("specSex", "classifiedAs")]
+
+# Plot wireframe difference
+par(mfrow = c(3, 1), mar = c(0, 0, 0, 0)) # 1 row, 3 columns
+
+meanCryF <- mshape(aligned3d[,,wings$specSex == "lucorum-F"])
+meanCryM <- mshape(aligned3d[,,wings$specSex == "lucorum-M"])
+plotRefToTarget(meanCryF, meanCryM, mag = 2, links = linkBombus, method = "points", 
+                gridPars = list(pt.bg = colorCry, link.col = colorCry, link.lty = 3, pt.size = dotSize, tar.pt.bg = NA, tar.link.col = colorCry, tar.link.lty = 1, tar.pt.size = dotSize))
+legend("bottomleft",
+       legend = c("cryptarum females", "cryptarum males"),
+       pch = 21,
+       pt.bg = c(colorCry, NA),
+       lty = c(3, 1),
+       bty = "n")
+mtext("a", side = 3, line = -1, adj = 0)
+
+meanLucF <- mshape(aligned3d[,,wings$specSex == "lucorum-F"])
+meanLucM <- mshape(aligned3d[,,wings$specSex == "lucorum-M"])
+plotRefToTarget(meanLucF, meanLucM, mag = 2, links = linkBombus, method = "points", 
+                gridPars = list(pt.bg = colorLuc, link.col = colorLuc, link.lty = 3, pt.size = dotSize, tar.pt.bg = NA, tar.link.col = colorLuc, tar.link.lty = 1, tar.pt.size = dotSize))
+legend("bottomleft",
+       legend = c("B. lucorum females", "B. lucorum males"),
+       pch = 21,
+       pt.bg = c(colorLuc, NA),
+       lty = c(3, 1),
+       bty = "n")
+mtext("b", side = 3, line = -1, adj = 0)
+
+meanTerF <- mshape(aligned3d[,,wings$specSex == "terrestris-F"])
+meanTerM <- mshape(aligned3d[,,wings$specSex == "terrestris-M"])
+plotRefToTarget(meanTerF, meanTerM, mag = 2, links = linkBombus, method = "points", 
+                gridPars = list(pt.bg = colorTer, link.col = colorTer, link.lty = 3, pt.size = dotSize, tar.pt.bg = NA, tar.link.col = colorTer, tar.link.lty = 1,  tar.pt.size = dotSize))
+legend("bottomleft",
+       legend = c("B. terrestris females", "B. terrestris males"),
+       pch = 21,
+       pt.bg = c(colorTer, NA),
+       lty = c(3, 1),
+       bty = "n")
+mtext("c", side = 3, line = -1, adj = 0)
+
+par(op) # Restore original graphical parameters
+
+```
+
+## Create identification data
+
+```{r id}
+
+gmLdaData2xml(wings[,xyNames], wings$species, "Bombus-sensu-stricto-species.dw.xml")
+
+# classify wings
+id = xml2id("Bombus-sensu-stricto-species.dw.xml", wings[ ,xyNames], average = FALSE)
+id$plot
+
+idID = id$id
+idID$species = wings$species
+tab = table(idID$group, idID$species)
+tab
+prop.table(tab, margin = 2)
+
+pTab <- as.data.frame(id$P)
+sums <- rowSums(pTab)
+pTab <- pTab/sums
+pTabLong <- pTab
+pTabLong$sample <- rownames(pTabLong)
+pTabLong <- melt(pTabLong, id.vars = c("sample"))
+pTabLong$gr <- substr(pTabLong$sample, 1, 2)  # short 2 letter name
+
+ggplot(pTabLong, aes(sample, value, fill = variable)) + 
+  geom_col(width = 1) + 
+  scale_fill_manual(name = "species",
+    values = c(colorCry, colorLuc, colorTer),
+    labels = c(cryptarum = "B. cryptarum", 
+               lucorum = "B. lucorum", 
+               terrestris = "B. terrestris")) +
+  facet_grid(~gr, switch = "x", scales = "free", space = "free") +
+  theme_minimal() + 
+  labs(x = NULL, y = NULL) + 
+  scale_y_continuous(expand = c(0,0)) + 
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) + 
+  theme(panel.spacing.x = unit(0.2,"lines"), 
+        axis.text.x = element_blank(), 
+        legend.position = "top")
+
+# classify specimens
+id = xml2id("Bombus-sensu-stricto-species.dw.xml", ind[ ,xyNames], average = FALSE)
+id$plot
+
+idID = id$id
+idID$species = ind$species
+tab = table(idID$group, idID$species)
+tab
+prop.table(tab, margin = 2)
+
+pTab <- as.data.frame(id$P)
+sums <- rowSums(pTab)
+pTab <- pTab/sums
+pTabLong <- pTab
+pTabLong$sample <- rownames(pTabLong)
+pTabLong <- melt(pTabLong, id.vars = c("sample"))
+pTabLong$gr <- substr(pTabLong$sample, 1, 2)  # short 2 letter name
+
+ggplot(pTabLong, aes(sample, value, fill = variable)) + 
+  geom_col(width = 1) + 
+  scale_fill_manual(name = "species",
+    values = c(colorCry, colorLuc, colorTer),
+    labels = c(cryptarum = "B. cryptarum", 
+               lucorum = "B. lucorum", 
+               terrestris = "B. terrestris")) +
+  facet_grid(~gr, switch = "x", scales = "free", space = "free") +
+  theme_minimal() + 
+  labs(x = NULL, y = NULL) + 
+  scale_y_continuous(expand = c(0,0)) + 
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) + 
+  theme(panel.spacing.x = unit(0.2,"lines"), 
+        axis.text.x = element_blank(), 
+        legend.position = "top")
+
+```
+
+## Figures
+
+```{r fig}
+
+ggarrange(figPca, figLda, figLdaFM, labels = c("a", "b", "c"), font.label = list(size = 12, face = "bold"),  ncol = 1, nrow = 3, common.legend = TRUE, legend = "bottom", align = "v") 
+
+
+```
+
+
+## Session information
+
+```{r info}
+sessionInfo()
+```
+
+
