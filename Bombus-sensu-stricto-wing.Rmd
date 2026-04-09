@@ -1,6 +1,6 @@
 ---
 title: "Analysis of wings shape in three cryptic species of *Bombus*"
-subtitle: "Supplementary document with statistical analysis"
+subtitle: "<https://drawwing.github.io/Bombus-sensu-stricto-wing/Bombus-sensu-stricto-wing>"
 author: 
   - name: "Bartłomiej Molasy"
     affiliation: Jagiellonian University, Poland
