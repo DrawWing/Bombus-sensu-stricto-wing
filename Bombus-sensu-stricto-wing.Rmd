@@ -4,7 +4,7 @@ subtitle: "<https://drawwing.github.io/Bombus-sensu-stricto-wing/Bombus-sensu-st
 author: 
   - name: "Bartłomiej Molasy"
     affiliation: Jagiellonian University, Poland
-    # orcid: 
+    orcid: 0000-0003-4079-9307
   - name: "Adam Tofilski"
     affiliation: University of Agriculture in Krakow, Poland
     orcid: 0000-0002-3898-7029
@@ -274,30 +274,36 @@ par(mfrow = c(3, 1), mar = c(0, 0, 0, 0)) # 1 row, 3 columns
 plotRefToTarget(meanCry, meanLuc, mag = 2,
                 links = linkBombus, method = "points", gridPars = list(pt.bg = colorLuc, link.col = colorLuc, pt.size = dotSize, tar.pt.bg = colorCry, tar.link.col = colorCry, tar.pt.size = dotSize))
 legend("bottomleft",
-       legend = c("B. cryptarum", "B. lucorum"),
+       legend = c(expression(italic(B.~cryptarum)),
+                  expression(italic(B.~lucorum))),
        pch = 21,
        pt.bg = c(colorLuc, colorCry),
-       pt.cex = dotSize,
+       lty = 1,
+       col = c(colorLuc, colorCry),
        bty = "n")
 mtext("a", side = 3, line = -1, adj = 0)
 
 plotRefToTarget(meanCry, meanTer, mag = 2,
                 links = linkBombus, method = "points", gridPars = list(pt.bg = colorCry, link.col = colorCry, pt.size = dotSize, tar.pt.bg = colorTer, tar.link.col = colorTer, tar.pt.size = dotSize))
 legend("bottomleft",
-       legend = c("B. cryptarum", "B. terrestris"),
+       legend = c(expression(italic(B.~cryptarum)),
+                  expression(italic(B.~terrestris))),
        pch = 21,
        pt.bg = c(colorCry, colorTer),
-       pt.cex = dotSize,
+       lty = 1,
+       col = c(colorCry, colorTer),
        bty = "n")
 mtext("b", side = 3, line = -1, adj = 0)
 
 plotRefToTarget(meanLuc, meanTer, mag = 2,
                 links = linkBombus, method = "points", gridPars = list(pt.bg = colorLuc, link.col = colorLuc, pt.size = dotSize, tar.pt.bg = colorTer, tar.link.col = colorTer, tar.pt.size = 0.5))
 legend("bottomleft",
-       legend = c("B. lucorum", "B. terrestris"),
+       legend = c(expression(italic(B.~lucorum)),
+                  expression(italic(B.~terrestris))),
        pch = 21,
        pt.bg = c(colorLuc, colorTer),
-       pt.cex = dotSize,
+       lty = 1,
+       col = c(colorLuc, colorTer),
        bty = "n")
 mtext("c", side = 3, line = -1, adj = 0)
 
@@ -403,7 +409,8 @@ meanCryM <- mshape(aligned3d[,,wings$specSex == "lucorum-M"])
 plotRefToTarget(meanCryF, meanCryM, mag = 2, links = linkBombus, method = "points", 
                 gridPars = list(pt.bg = colorCry, link.col = colorCry, link.lty = 3, pt.size = dotSize, tar.pt.bg = NA, tar.link.col = colorCry, tar.link.lty = 1, tar.pt.size = dotSize))
 legend("bottomleft",
-       legend = c("cryptarum females", "cryptarum males"),
+       legend = c(expression(paste(italic(B.~cryptarum), " females")),
+                  expression(paste(italic(B.~cryptarum), " males"))),
        pch = 21,
        pt.bg = c(colorCry, NA),
        lty = c(3, 1),
@@ -415,7 +422,8 @@ meanLucM <- mshape(aligned3d[,,wings$specSex == "lucorum-M"])
 plotRefToTarget(meanLucF, meanLucM, mag = 2, links = linkBombus, method = "points", 
                 gridPars = list(pt.bg = colorLuc, link.col = colorLuc, link.lty = 3, pt.size = dotSize, tar.pt.bg = NA, tar.link.col = colorLuc, tar.link.lty = 1, tar.pt.size = dotSize))
 legend("bottomleft",
-       legend = c("B. lucorum females", "B. lucorum males"),
+       legend = c(expression(paste(italic(B.~lucorum), " females")),
+                  expression(paste(italic(B.~lucorum), " males"))),
        pch = 21,
        pt.bg = c(colorLuc, NA),
        lty = c(3, 1),
@@ -427,7 +435,8 @@ meanTerM <- mshape(aligned3d[,,wings$specSex == "terrestris-M"])
 plotRefToTarget(meanTerF, meanTerM, mag = 2, links = linkBombus, method = "points", 
                 gridPars = list(pt.bg = colorTer, link.col = colorTer, link.lty = 3, pt.size = dotSize, tar.pt.bg = NA, tar.link.col = colorTer, tar.link.lty = 1,  tar.pt.size = dotSize))
 legend("bottomleft",
-       legend = c("B. terrestris females", "B. terrestris males"),
+       legend = c(expression(paste(italic(B.~terrestris), " females")),
+                  expression(paste(italic(B.~terrestris), " males"))),
        pch = 21,
        pt.bg = c(colorTer, NA),
        lty = c(3, 1),
