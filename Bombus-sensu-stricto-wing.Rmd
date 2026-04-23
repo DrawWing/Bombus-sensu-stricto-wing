@@ -87,7 +87,7 @@ dotSize = 0.5
 ## Read  data
 
 ```{r read-data}
-wings <- read.csv("Bombus-sensu-stricto-wing.csv", sep=";", row.names = 1)
+wings <- read.csv("Bombus_cry_luc_ter-raw-coordinates.csv", row.names = 1)
 names <- str_split_fixed(rownames(wings), "-", 4)
 colnames(names) <- c("species", "sex", "ind", "side")
 names = as.data.frame(names)

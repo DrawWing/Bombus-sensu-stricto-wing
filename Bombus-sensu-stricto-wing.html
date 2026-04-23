@@ -2233,7 +2233,7 @@ vertical-align: -.125em;
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">2026-04-22</p>
+      <p class="date-modified">2026-04-23</p>
     </div>
   </div>
     
@@ -2311,7 +2311,7 @@ vertical-align: -.125em;
 <section id="read-data" class="level2">
 <h2 class="anchored" data-anchor-id="read-data">Read data</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>wings <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">&quot;Bombus-sensu-stricto-wing.csv&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;;&quot;</span>, <span class="at">row.names =</span> <span class="dv">1</span>)</span>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>wings <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">&quot;Bombus_cry_luc_ter-raw-coordinates.csv&quot;</span>, <span class="at">row.names =</span> <span class="dv">1</span>)</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>names <span class="ot">&lt;-</span> <span class="fu">str_split_fixed</span>(<span class="fu">rownames</span>(wings), <span class="st">&quot;-&quot;</span>, <span class="dv">4</span>)</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(names) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;species&quot;</span>, <span class="st">&quot;sex&quot;</span>, <span class="st">&quot;ind&quot;</span>, <span class="st">&quot;side&quot;</span>)</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>names <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(names)</span>
