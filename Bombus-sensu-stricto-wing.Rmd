@@ -198,17 +198,6 @@ figPca = ggplot(PCscores, aes(x = PC1, y = PC2,
   xlab(labelX) +
   ylab(labelY) +
   theme(aspect.ratio = 0.7)
-# theme(
-#   aspect.ratio = 0.7,
-#   legend.position = "bottom",
-#   legend.box = "vertical",
-#   legend.spacing.y = unit(0, "cm")
-# ) +
-# guides(
-#   color = guide_legend(order = 1),
-#   shape = guide_legend(order = 2),
-#   linetype = "none"
-# )
 figPca
 
 ```
@@ -277,9 +266,9 @@ legend("bottomleft",
        legend = c(expression(italic(B.~cryptarum)),
                   expression(italic(B.~lucorum))),
        pch = 21,
-       pt.bg = c(colorLuc, colorCry),
+       pt.bg = c(colorCry, colorLuc),
        lty = 1,
-       col = c(colorLuc, colorCry),
+       col = c(colorCry, colorLuc),
        bty = "n")
 mtext("a", side = 3, line = -1, adj = 0)
 
@@ -351,17 +340,6 @@ figLdaFM = ggplot(LDscores, aes(x = LD1, y = LD2, shape = sex, color = species))
     labels = c(F = "female", M = "male")
   )  +
   theme(aspect.ratio = 0.7)
-# theme(
-#   aspect.ratio = 0.7,
-#   legend.position = "bottom",
-#   legend.box = "vertical",   
-#   legend.spacing.y = unit(0, "cm")
-# ) +
-# guides(
-#   color = guide_legend(order = 1),
-#   shape = guide_legend(order = 2),
-#   linetype = "none"
-# )
 figLdaFM
 
 ggplot(LDscores, aes(x = LD1, y = LD3, shape = sex, color = species)) +
